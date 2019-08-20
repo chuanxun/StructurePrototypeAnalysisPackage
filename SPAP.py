@@ -109,6 +109,8 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=0
         r_vector = np.linspace(0.0, ccf_range, int((ccf_range) / ccf_step) + 2)
         # r_vector = np.linspace(0.0, ccf_range, 400)
     # os.chdir('../SrCl2/results')
+    # os.chdir('D:\\share\\wks\\1_example\\results2')
+    # os.chdir('D:\\share\\wks\\2mg\\results')
     structure_list = []
     chemical_symbols = ''
     if i_mode == 1:
@@ -135,17 +137,21 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=0
             elif 'NumberOfLocalOptim' in line:
                 nolo = (line[line.find('=') + 1:-1]).replace(' ', '')
             elif 'Cluster' in line:
-                print('Not supported yet.')
-                exit()
+                if (line[line.find('=') + 1:-1].lstrip())[0] == 'T':
+                    print('Not supported yet.')
+                    exit()
             elif '2D' in line:
-                print('Not supported yet.')
-                exit()
+                if (line[line.find('=') + 1:-1].lstrip())[0] == 'T':
+                    print('Not supported yet.')
+                    exit()
             elif 'VSC' in line:
-                print('Not supported yet.')
-                exit()
+                if (line[line.find('=') + 1:-1].lstrip())[0] == 'T':
+                    print('Not supported yet.')
+                    exit()
             elif 'LSurface' in line:
-                print('Not supported yet.')
-                exit()
+                if (line[line.find('=') + 1:-1].lstrip())[0] == 'T':
+                    print('Not supported yet.')
+                    exit()
         if calculator == 'VASP':
             with open('../INCAR_' + nolo, 'r') as incar:
                 cal_p = incar.readlines()
@@ -560,7 +566,7 @@ def show2ccf(ccf1, ccf2, r_vector):
 if __name__ == '__main__':
     analyze(
         symprec=0.1,
-        e_range=0.4,
+        e_range=0.14,
         # total_struc=60,
         threshold=0.075,
         r_cut_off=9.0,
@@ -569,8 +575,8 @@ if __name__ == '__main__':
         # ccf_step=0.02,
         l_comp=True,
         # l_db=True,
-        # l_cif=True,
-        # l_poscar=True,
+        l_cif=True,
+        l_poscar=True,
         # i_mode=1,
         # l_view=True,
     )
