@@ -1,0 +1,23 @@
+SYSTEM = - local optimisation
+PREC = Normal
+ENCUT = 450.0
+EDIFF = 1e-4
+IBRION = 2
+IALGO=48
+ISIF = 3
+#ISPIN =2
+NSW = 100
+NELM =45
+#ISYM= 0
+SYMPREC=1e-3
+ISMEAR = 1 ; SIGMA = 0.2
+#LREAL= Auto
+POTIM = 0.1
+#Wavefunction and charge
+LWAVE = FALSE
+LCHARG = FALSE
+#Target Pressure
+PSTRESS = 169
+#Finer optimization
+EDIFFG = 1e-3
+NPAR = 3

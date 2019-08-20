@@ -1,0 +1,61 @@
+# System Name default=CALYPSO 
+SystemName = 4LaC2
+# the number of elements
+NumberOfSpecies = 2
+# the name of element (The order is the same as POTCAR)
+NameOfAtoms = La C
+
+# the number of elements
+NumberOfAtoms = 1 2 
+
+# atomic numbure
+AtomicNumber = 57 6
+
+# the max step of iteration
+MaxStep = 60
+#RecordOUTCAR = T
+# the volume of 1 f.u. unit=angstrom^3
+Volume=42
+
+@DistanceOfIon
+ 1.9000  1.6500
+  1.6500  1.0500
+@end
+
+# the ratio of survive to do PSO
+PsoRatio = 0.4 
+
+# the algorithm
+Ialgo = 1 
+
+ICode=  1
+
+NumberOfLocalOptim = 3
+
+# the KPOINTS Distance
+Kgrid = 0.1  0.06
+
+# The command to submit the job (according to your computors)
+Command = sh submit.sh
+
+# the number of formula in the unit cell
+NumberOfFormula = 4  4
+
+# the Population size
+PopSize = 50 
+
+# only used in molecular crystal structure(implanted, testing now)
+mol=F
+#PickUp= T
+#PickStep=16
+MaxTime= 7200
+#MOLdis=0.75 1.20
+#Spespacegroup = 164
+# only used for cluster (testing now)
+#cluster= T
+# special constrain
+  #spepg = D3d (point group)
+  #spesg = 20  (special atoms_)
+  #isym= .true. (not support now)
+  #constrain = .true. (not support now)
+
