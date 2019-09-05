@@ -168,8 +168,15 @@ def element_tag(numbers):
 
 
 def cell_range(cell, rcut):
-    recipc_no2pi = Atoms(cell=cell, pbc=True).get_reciprocal_cell()
-    return [int(rcut * ((np.sum(recipc_no2pi[i] ** 2)) ** 0.5)) + 1 for i in range(3)]
+    recipc_no2pi = Atoms(cell=cell).get_reciprocal_cell()
+    i_range=[]
+    for i in range(3):
+        if cell.pbc[i]==True:
+            i_range.append(int(rcut * ((np.sum(recipc_no2pi[i] ** 2)) ** 0.5)) + 1)
+        else:
+            i_range.append(0)
+    return i_range
+    # return [int(rcut * ((np.sum(recipc_no2pi[i] ** 2)) ** 0.5)) + 1 for i in range(3)]
 
 
 def count_atoms_dict(numbers):
