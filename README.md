@@ -27,7 +27,7 @@ SPAP can run at 3 different modes.
     named *.cif, *.vasp (VASP format), or any name and format ase can read
     automatically.
 3.  To read and analyze structures optimized by VASP, set i_mode=3. Define
-    work_dir. It is the path where you put the optimized structures.
+    work_dir. It is the path where you put the optimized structures.  
 You could customize other parameters at the end of this script.
 
 ## Output:
