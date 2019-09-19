@@ -30,6 +30,7 @@ SPAP can run at four different modes.
     work_dir. It is the path where you put the optimized structures.
 4.  To calculate symmetry and compare similarity of a list of structures, set
     i_mode=4. Assign a list of Atoms objects to structure_list.  
+  
 You could customize other parameters at the end of this script.
 
 ## Output:
