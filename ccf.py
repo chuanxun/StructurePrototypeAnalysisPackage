@@ -1,11 +1,28 @@
+'''
+Author:
+Dr. Chuanxun Su
+State Key Lab of Superhard Materials, Jilin University, Changchun, China
+
+Email:
+suchuanxun@163.cn / scx@calypso.cn
+'''
 import numpy as np
 from ase import Atoms
 from math import sqrt, pi, exp
+
+
 # from numba import jit
 
 
 def struc2ccf(struc, r_cut_off, r_vector):
-    return d2ccf(cal_inter_atomic_d(struc, r_cut_off), r_cut_off, r_vector)
+    ccf = d2ccf(cal_inter_atomic_d(struc, r_cut_off), r_cut_off, r_vector)
+    nspec = get_nspec(struc)
+    for i in range(1, nspec + 1):
+        for j in range(i, nspec + 1):
+            pairt = str(i) + '_' + str(j)
+            if not pairt in ccf:
+                ccf[pairt] = np.zeros(1)
+    return ccf
 
 
 def cal_ccf_d(ccf1, ccf2):
@@ -115,7 +132,7 @@ def d2ccf(distances, r_cut_off, r_vector):
     for key1 in distances.keys():
         for key2 in distances[key1].keys():
             if key1 in ccf:
-                ccf[key1] = ccf[key1]+gaussian_f(distances[key1][key2] * weight_f(key2, r_cut_off), key2, r_vector)
+                ccf[key1] = ccf[key1] + gaussian_f(distances[key1][key2] * weight_f(key2, r_cut_off), key2, r_vector)
             else:
                 ccf[key1] = gaussian_f(distances[key1][key2] * weight_f(key2, r_cut_off), key2, r_vector)
     pass
@@ -167,11 +184,19 @@ def element_tag(numbers):
     return ele_tag
 
 
+def get_nspec(struc):
+    eles = {}
+    for i in struc.numbers:
+        if not i in eles:
+            eles[i] = 1
+    return len(eles)
+
+
 def cell_range(cell, rcut):
     recipc_no2pi = Atoms(cell=cell).get_reciprocal_cell()
-    i_range=[]
+    i_range = []
     for i in range(3):
-        if cell.pbc[i]==True:
+        if cell.pbc[i] == True:
             i_range.append(int(rcut * ((np.sum(recipc_no2pi[i] ** 2)) ** 0.5)) + 1)
         else:
             i_range.append(0)
