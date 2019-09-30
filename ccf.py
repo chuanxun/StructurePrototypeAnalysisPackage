@@ -59,7 +59,7 @@ def cal_ccf_d(ccf1, ccf2):
 def cal_inter_atomic_d(struc, r_cut_off):
     distances = {}
     # square_rcut=r_cut_off*r_cut_off
-    i_range = cell_range(struc.cell, r_cut_off)
+    i_range = cell_range(struc.cell, struc.pbc, r_cut_off)
     natoms = len(struc.numbers)
     ele_tag = element_tag(struc.numbers)
     # square_delta=0.01
@@ -181,6 +181,8 @@ def element_tag(numbers):
             ele_n[i] = 1
     for i, x in enumerate(sorted(ele_n.items(), key=lambda x: x[1])):
         ele_tag[x[0]] = i + 1
+        # Worth to try something like below
+        # ele_tag[x[0]] = i
     return ele_tag
 
 
@@ -192,11 +194,11 @@ def get_nspec(struc):
     return len(eles)
 
 
-def cell_range(cell, rcut):
+def cell_range(cell, pbc, rcut):
     recipc_no2pi = Atoms(cell=cell).get_reciprocal_cell()
     i_range = []
     for i in range(3):
-        if cell.pbc[i] == True:
+        if pbc[i] == True:
             i_range.append(int(rcut * ((np.sum(recipc_no2pi[i] ** 2)) ** 0.5)) + 1)
         else:
             i_range.append(0)

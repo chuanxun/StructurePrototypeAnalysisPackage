@@ -1,10 +1,11 @@
+#!/usr/bin/python3
 '''
 Program name:
 Structure Prototype Analysis Package (SPAP)
 
 Description:
 SPAP can analyze symmetry and compare similarity of a large number of atomic
-structures. Typically, SPAP can analyze structures predicted by CALYPSO
+structures. Typically, SPAP can process structures predicted by CALYPSO
 (www.calypso.cn). We use spglib to analyze symmetry. Coordination
 Characterization Function (CCF) is used to measure structural similarity. If
 you use this program and method in your research, please read and cite the
@@ -16,7 +17,7 @@ Dr. Chuanxun Su
 State Key Lab of Superhard Materials, Jilin University, Changchun, China
 
 Version:
-0.2.0
+0.3.0
 
 Email:
 suchuanxun@163.cn / scx@calypso.cn
@@ -58,6 +59,7 @@ August 19, 2019
 
 import os
 import shutil
+import argparse
 import numpy as np
 from ase import Atoms
 from ase.db import connect
@@ -88,9 +90,9 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=N
     :param l_comp: bool
         Whether to compare similarity of structures.
     :param threshold: float
-        Threshold of similar/dissimilar boundary.
+        Threshold for similar/dissimilar boundary.
     :param r_cut_off: float
-        Inter-atomic distance within this cut off radius will contribute to
+        Inter-atomic distances within this cut off radius will contribute to
         CCF.
     :param extend_r: float
         CCF will be calculated in the range of (0,r_cut_off+extend_r).
@@ -110,12 +112,13 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=N
     :param l_poscar: bool
         Whether to write structures into files in VASP format.
     :param l_view: bool
-        Whether to view the structures.
+        Whether to display the structures.
     :param work_dir: str
         Set working directory.
     :param structure_list: list of Atoms objects.
         Assign a list of Atoms objects to structure_list when using i_mode=4.
     :param i_mode: int
+        Different functions of SPAP.
         1 analyze CALYPSO prediction results;
         2 calculate symmetry and similarity of structures in struc directory;
         3 read and analyze structures optimized by VASP;
@@ -265,8 +268,7 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=N
                     cell=[[float(struct_lines[e_list[ii][0] + 6 + k][j - 16:j]) for j in [17, 33, 49]] for k in
                           [0, 1, 2]],
                     scaled_positions=[[float(struct_lines[e_list[ii][0] + 13 + k][j - 12:j]) for j in [13, 25, 37]] for
-                                      k in
-                                      range(sum([int(n) for n in element_numbers]))], pbc=pbc))
+                                      k in range(sum([int(n) for n in element_numbers]))], pbc=pbc))
             except:
                 ill.append(ii)
                 print('Warning: structure in line {} in struct.dat was discarded.'.format(e_list[ii][0]))
@@ -471,7 +473,7 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=N
     if l_comp:
         d_f.close()
     left_id = [i for i in range(total_struc) if struc_d[i][0] == -2]
-    if l_db:
+    if l_db and total_struc > 0:
         # max_ls_e=e_list[0][1]+low_symm_er
         with connect('analyzed_structures.db', append=False) as db:
             data = {}
@@ -480,29 +482,28 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=N
                 'r_cut_off': r_cut_off, 'extend_r': extend_r, 'ccf_step': ccf_step, 'total_struc': total_struc,
                 'l_view': l_view, 'l_cif': l_cif, 'l_poscar': l_poscar, 'l_db': l_db}
             data['pseudopotential'] = pseudopotential
-            if total_struc > 0:
-                if i_mode == 1:
-                    data['incar'] = ''
-                    for line in cal_p:
-                        data['incar'] = data['incar'] + line
-                    data['prediction_parameters'] = ''
-                    for line in prediction_parameters:
-                        data['prediction_parameters'] += line
-                    db.write(structure_list[left_id[0]].conventional_cell, relaxed=True, enthalpy=e_list[left_id[0]][1],
-                             space_group=structure_list[left_id[0]].space_group, pressure=pressure,
-                             prediction_method=prediction_method, experimental=False, opt_code=calculator,
-                             data=data)
-                elif i_mode == 2 or i_mode == 4:
-                    db.write(structure_list[left_id[0]].conventional_cell,
-                             space_group=structure_list[left_id[0]].space_group, data=data)
-                elif i_mode == 3:
-                    data['incar'] = ''
-                    for line in cal_p:
-                        data['incar'] = data['incar'] + line
-                    db.write(structure_list[left_id[0]].conventional_cell, relaxed=True, e_per_a=e_list[left_id[0]][1],
-                             space_group=structure_list[left_id[0]].space_group, pressure=pressure,
-                             prediction_method=prediction_method, experimental=False, opt_code=calculator,
-                             data=data)
+            if i_mode == 1:
+                data['incar'] = ''
+                for line in cal_p:
+                    data['incar'] = data['incar'] + line
+                data['prediction_parameters'] = ''
+                for line in prediction_parameters:
+                    data['prediction_parameters'] += line
+                db.write(structure_list[left_id[0]].conventional_cell, relaxed=True, enthalpy=e_list[left_id[0]][1],
+                         space_group=structure_list[left_id[0]].space_group, pressure=pressure,
+                         prediction_method=prediction_method, experimental=False, opt_code=calculator,
+                         data=data)
+            elif i_mode == 2 or i_mode == 4:
+                db.write(structure_list[left_id[0]].conventional_cell,
+                         space_group=structure_list[left_id[0]].space_group, data=data)
+            elif i_mode == 3:
+                data['incar'] = ''
+                for line in cal_p:
+                    data['incar'] = data['incar'] + line
+                db.write(structure_list[left_id[0]].conventional_cell, relaxed=True, e_per_a=e_list[left_id[0]][1],
+                         space_group=structure_list[left_id[0]].space_group, pressure=pressure,
+                         prediction_method=prediction_method, experimental=False, opt_code=calculator,
+                         data=data)
             if total_struc > 1:
                 # for i in [j for j in left_id[1:] if space_g_l[j]>2 or e_list[j][1]<max_ls_e]:
                 # for i in range(total_struc):
@@ -532,9 +533,22 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=N
                 poscar.write('{:>13.7f}{:>13.7f}{:>13.7f}\n'.format(v[0], v[1], v[2]))
             # atomic_n = []
             ele_n = ''
-            for symbol in structure_list[i].conventional_cell.symbols.formula._count.keys():
+            count_e={}
+            for j in structure_list[i].conventional_cell.numbers:
+                if j in count_e:
+                    count_e[j]+=1
+                else:
+                    count_e[j]=1
+            for n in count_e.keys():
+                for key in atomic_numbers.keys():
+                    if atomic_numbers[key]==n:
+                        symbol=key
+                        break
                 poscar.write('{:4}'.format(symbol))
-                ele_n += ' {:>3}'.format(structure_list[i].conventional_cell.symbols.formula._count[symbol])
+                ele_n += ' {:>3}'.format(count_e[n])
+            # for symbol in structure_list[i].conventional_cell.symbols.formula._count.keys():
+            #     poscar.write('{:4}'.format(symbol))
+            #     ele_n += ' {:>3}'.format(structure_list[i].conventional_cell.symbols.formula._count[symbol])
             poscar.write('\n' + ele_n)
 
             # for symbol in chemical_symbols:
@@ -552,7 +566,8 @@ def analyze(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=N
 
             poscar.write('\nDirect\n')
             scaled_pos = structure_list[i].conventional_cell.get_scaled_positions(wrap=True)
-            for n in [atomic_numbers[symbol] for symbol in structure_list[i].symbols.formula._count.keys()]:
+            for n in count_e.keys():
+            # for n in [atomic_numbers[symbol] for symbol in structure_list[i].symbols.formula._count.keys()]:
                 for j, pos in enumerate(scaled_pos):
                     if structure_list[i].conventional_cell.numbers[j] == n:
                         poscar.write('{:>8.5f} {:>8.5f} {:>8.5f}\n'.format(pos[0], pos[1], pos[2]))
@@ -611,7 +626,7 @@ def cal_struc_d(structures, id_list, struc_d, spg_n, threshold, r_cut_off, volum
                 struc2ccf(Atoms(
                     cell=structures[id_list[0]].cell * (volume / structures[id_list[0]].get_volume()) ** (1.0 / 3.0),
                     scaled_positions=structures[id_list[0]].get_scaled_positions(wrap=True),
-                    numbers=structures[id_list[0]].numbers, pbc=structures[0].cell.pbc), r_cut_off, r_vector)
+                    numbers=structures[id_list[0]].numbers, pbc=structures[0].pbc), r_cut_off, r_vector)
         # volume = structures[id_list[0]].get_volume()
         for i in id_list[1:]:
             if ilat == 0:
@@ -620,7 +635,7 @@ def cal_struc_d(structures, id_list, struc_d, spg_n, threshold, r_cut_off, volum
                 scaled_positions = structures[i].get_scaled_positions(wrap=True)
                 structures[i].ccf = struc2ccf(
                     Atoms(cell=structures[i].cell * (volume / structures[i].get_volume()) ** (1.0 / 3.0),
-                          scaled_positions=scaled_positions, numbers=structures[i].numbers, pbc=structures[0].cell.pbc),
+                          scaled_positions=scaled_positions, numbers=structures[i].numbers, pbc=structures[0].pbc),
                     r_cut_off, r_vector)
             # if i == 57:
             #     ccf_file = open('ccf.dat', 'wb')
@@ -630,9 +645,9 @@ def cal_struc_d(structures, id_list, struc_d, spg_n, threshold, r_cut_off, volum
             #     pickle.dump(r_vector,rvf)
             #     rvf.close()
             #     write('out.cif',Atoms(cell=structures[i].cell * (volume / structures[i].get_volume()) ** (1.0 / 3.0),
-            #           scaled_positions=scaled_positions, numbers=structures[i].numbers,pbc=structures[0].cell.pbc))
+            #           scaled_positions=scaled_positions, numbers=structures[i].numbers,pbc=structures[0].pbc))
             #     print(Atoms(cell=structures[i].cell * (volume / structures[i].get_volume()) ** (1.0 / 3.0),
-            #           scaled_positions=scaled_positions, numbers=structures[i].numbers,pbc=structures[0].cell.pbc).get_volume())
+            #           scaled_positions=scaled_positions, numbers=structures[i].numbers,pbc=structures[0].pbc).get_volume())
             for j in [prototype_id[-1 - j2] for j2 in range(len(prototype_id))]:
                 struc_d[i][1] = cal_ccf_d(structures[j].ccf, structures[i].ccf)
                 if struc_d[i][1] < threshold:
@@ -641,9 +656,9 @@ def cal_struc_d(structures, id_list, struc_d, spg_n, threshold, r_cut_off, volum
                 elif l_same_cell:
                     struc_d[i][1] = cal_ccf_d(
                         structures[j].ccf, struc2ccf(Atoms(
-                            cell=structures[j].cell * (volume / structures[j].cell.volume) ** (1.0 / 3.0),
+                            cell=structures[j].cell * (volume / structures[j].get_volume()) ** (1.0 / 3.0),
                             scaled_positions=scaled_positions, numbers=structures[i].numbers,
-                            pbc=structures[0].cell.pbc), r_cut_off, r_vector))
+                            pbc=structures[0].pbc), r_cut_off, r_vector))
                     if struc_d[i][1] < threshold:
                         struc_d[i][0] = j
                         break
@@ -723,21 +738,91 @@ def show2ccf(ccf1, ccf2, r_vector):
     plt.show()
 
 
-if __name__ == '__main__':
+def start_cli():
+    helpl='''
+this parameter controls which method will be used to deal with lattice for comparing structural similarity
+0 don't change lattice
+1 equal particle number density
+2 try equal particle number density and equal lattice
+'''.strip()
+    parser = argparse.ArgumentParser(
+        description='SPAP can analyze symmetry and compare similarity of a large number of atomic structures. '
+                    'Typically, SPAP can process structures predicted by CALYPSO (www.calypso.cn). We use spglib to '
+                    'analyze symmetry.'
+                    # 'Coordination Characterization Function (CCF) is used to measure structural '
+                    # 'similarity. If you use this program and method in your research, please read and cite the '
+                    # 'following publication: \nJ. Phys. Condens. Matter 2017, 29, 165901.'
+    )
+    parser.add_argument('-t', '--tolerance', '--symprec', type=float, default=0.1,dest='symprec',
+                        help='this precision is used to analyze symmetry of atomic structures (default: %(default)s)')
+    parser.add_argument('-e', '--e_range', type=float, default=0.4,
+                        help='define an energy range in which structures will be analyzed (default: %(default)s)')
+    parser.add_argument('-n', '--total_struc', type=int, default=None,
+                        help='this number of structures will be analyzed  (default: %(default)s)')
+    parser.add_argument('-a',action='store_true',help='process all the structures')
+    parser.add_argument('--nc', '--n_comp', action='store_true',
+                        help='not to compare similarity of structures  (default: %(default)s)')
+    parser.add_argument('--th', '--threshold', type=float, default=None,dest='threshold',
+                        help='threshold for similar/dissimilar boundary (default: %(default)s)')
+    parser.add_argument('-r', '--r_cut_off', type=float, default=9.0,
+                        help='inter-atomic distances within this cut off radius will contribute to CCF '
+                             '(default: %(default)s Angstrom)')
+    parser.add_argument('-l', '--ilat', type=int, choices=[0, 1, 2], default=2,
+                        help=helpl
+                             #'this parameter controls which method will be used to '
+                             # 'deal with lattice for comparing structural similarity\n'
+                             # '0 don\'t change lattice\n'
+                             # '1 equal particle number density\n'
+                             # '2 try equal particle number density and equal lattice (default: %(default)s)'
+    )
+    parser.add_argument('--nd','--no_db',action='store_true',
+                        help='not to write structures into ase (https://wiki.fysik.dtu.dk/ase/) database file '
+                             '(default: %(default)s)')
+    parser.add_argument('--cif','--l_cif',action='store_true',dest='l_cif',
+                        help='write structures into cif files (default: %(default)s)')
+    parser.add_argument('--pos','--vasp','--l_poscar',action='store_true',dest='l_poscar',
+                        help='write structures into files in VASP format (default: %(default)s)')
+    parser.add_argument('-d','--l_view',action='store_true',help='display the structures (default: %(default)s)')
+    parser.add_argument('-w','--work_dir',type=str,default='./',help='set working directory (default: %(default)s)')
+    parser.add_argument('-i','--i_mode',type=int,choices=[1,2,3],default=1,
+                        help='different functions of SPAP: \n1 analyze CALYPSO prediction results; \n2 calculate '
+                             'symmetry and similarity of structures in struc directory; \n3 read and analyze '
+                             'structures optimized by VASP (default: %(default)s)')
+    parser.add_argument('-v','--version', action='version', version='SPAP: 0.3.0')
+    args = parser.parse_args()
+    if args.a:
+        args.total_struc=99999999
     analyze(
-        # symprec=0.1,
+        symprec=args.symprec,
+        e_range=args.e_range,
         # e_range=0.3,
-        # total_struc=200,
+        total_struc=args.total_struc,
         # threshold=0.05,
+        threshold=args.threshold,
         # r_cut_off=6.0,
+        r_cut_off=args.r_cut_off,
         # extend_r=1.0,
         # ilat=2,
+        ilat=args.ilat,
         # ccf_step=0.02,
         # l_comp=False,
+        l_comp=not args.nc,
         # l_db=True,
+        l_db=not args.nd,
         # l_cif=True,
+        l_cif=args.l_cif,
         # l_poscar=True,
+        l_poscar=args.l_poscar,
         # work_dir='./example/results',
+        # work_dir='C:\\Users\\null\\Documents\\share\\wks\\Examples\\1_example\\results',
+        # work_dir='./results',
+        work_dir=args.work_dir,
         # i_mode=1,
+        i_mode=args.i_mode,
         # l_view=True,
+        l_view=args.l_view,
     )
+
+
+if __name__ == '__main__':
+    start_cli()
