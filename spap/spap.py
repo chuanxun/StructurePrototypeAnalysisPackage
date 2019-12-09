@@ -17,7 +17,7 @@ Dr. Chuanxun Su
 State Key Lab of Superhard Materials, Jilin University, Changchun, China
 
 Version:
-1.0.0
+1.0.1
 
 Email:
 suchuanxun@163.cn / scx@calypso.cn
@@ -848,8 +848,7 @@ this parameter controls which method will be used to deal with lattice for compa
 '''.strip()
     parser = argparse.ArgumentParser(
         description='SPAP can analyze symmetry and compare similarity of a large number of atomic structures. '
-                    'Typically, SPAP can process structures predicted by CALYPSO (www.calypso.cn). We use spglib to '
-                    'analyze symmetry.'
+                    'Typically, SPAP can process structures predicted by CALYPSO (www.calypso.cn).'
         # 'Coordination Characterization Function (CCF) is used to measure structural '
         # 'similarity. If you use this program and method in your research, please read and cite the '
         # 'following publication: \nJ. Phys. Condens. Matter 2017, 29, 165901.'
@@ -889,7 +888,7 @@ this parameter controls which method will be used to deal with lattice for compa
                         help='different functions of SPAP: \n1 analyze CALYPSO prediction results; \n2 calculate '
                              'symmetry and similarity of structures in struc directory; \n3 read and analyze '
                              'structures optimized by VASP (default: %(default)s)')
-    parser.add_argument('-v', '--version', action='version', version='SPAP: 1.0.0')
+    parser.add_argument('-v', '--version', action='version', version='SPAP: 1.0.1')
     args = parser.parse_args()
     if args.a:
         args.total_struc = 99999999
