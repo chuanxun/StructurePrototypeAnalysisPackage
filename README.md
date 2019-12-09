@@ -10,7 +10,7 @@ Dr. Chuanxun Su
 State Key Lab of Superhard Materials, Jilin University, Changchun, China
 
 ## Version:
-SPAP: 1.0.0
+SPAP: 1.0.1
 
 ## Email:
 suchuanxun@163.cn / scx@calypso.cn
