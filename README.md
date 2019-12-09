@@ -57,7 +57,7 @@ volume. The distance.dat stores the distances between structures and some other
 attributes. The analyzed_structures.db is in atomic simulation environment (ASE) 
 database format for atoms. You can easily read and analyze these structures 
 through ASE. You can also add and store properties you are interested in. 
-This function is very useful for screening out good functional materials. 
+This functionality is very useful for screening out good functional materials. 
 SPAP can also write structures in cif and VASP format in dir_* directory. 
 Technically speaking, SPAP can easily write any structure format supported by 
 ASE.  
