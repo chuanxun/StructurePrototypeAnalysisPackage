@@ -16,9 +16,6 @@ Author:
 Dr. Chuanxun Su
 State Key Lab of Superhard Materials, Jilin University, Changchun, China
 
-Version:
-1.0.1
-
 Email:
 suchuanxun@163.cn / scx@calypso.cn
 
@@ -49,7 +46,7 @@ distance.dat stores the distances between structures and some other attributes.
 analyzed_structures.db is in Atomic Simulation Environment (ASE) database
 format for atoms. You can easily read and analyze these structures through
 ASE. You can also add and store properties you are interested in. This
-function is very useful for screening out good functional materials. SPAP can
+functionality is very useful for screening out good functional materials. SPAP can
 also write structures in cif and VASP format in dir_* directory. Technically
 speaking, SPAP can easily write any structure format supported by ASE.
 
@@ -122,7 +119,7 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
     :param structure_list: list of Atoms objects.
         Assign a list of Atoms objects to structure_list when using i_mode=4.
     :param i_mode: int
-        Different functions of SPAP.
+        Different functionality of SPAP.
         1 analyze CALYPSO prediction results;
         2 calculate symmetry and similarity of structures in struc directory;
         3 read and analyze structures optimized by VASP;
@@ -885,7 +882,7 @@ this parameter controls which method will be used to deal with lattice for compa
     parser.add_argument('-d', '--l_view', action='store_true', help='display the structures (default: %(default)s)')
     parser.add_argument('-w', '--work_dir', type=str, default='./', help='set working directory (default: %(default)s)')
     parser.add_argument('-i', '--i_mode', type=int, choices=[1, 2, 3], default=1,
-                        help='different functions of SPAP: \n1 analyze CALYPSO prediction results; \n2 calculate '
+                        help='different functionality of SPAP: \n1 analyze CALYPSO prediction results; \n2 calculate '
                              'symmetry and similarity of structures in struc directory; \n3 read and analyze '
                              'structures optimized by VASP (default: %(default)s)')
     parser.add_argument('-v', '--version', action='version', version='SPAP: 1.0.1')
