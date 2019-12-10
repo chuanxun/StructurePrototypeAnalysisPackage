@@ -26,7 +26,7 @@ Use command: `pip install spap`
 Or download the source code and install: `python3 setup.py install`
 
 ## Example Command:
-You can run the program by the following commands:
+You can run the program by the following commands:  
 `spap -h` (show help)  
 `spap --nc` (analyze symmetry and don't compare similarity)  
 ```
