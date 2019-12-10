@@ -27,6 +27,7 @@ Or download the source code and install: `python3 setup.py install`
 
 ## Example Command:
 You can run the program by the following commands:
+spap -h| show help
 ```
 spap -h  
 spap --nc  
