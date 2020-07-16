@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='spap',
-    version='1.0.1',
+    version='1.0.2',
     packages=find_packages(),
     # package_dir={'':'spap'},
     url='https://github.com/chuanxun/StructurePrototypeAnalysisPackage',
