@@ -1,7 +1,6 @@
 '''
 Author:
 Dr. Chuanxun Su
-State Key Lab of Superhard Materials, Jilin University, Changchun, China
 
 Email:
 suchuanxun@163.cn / scx@calypso.cn

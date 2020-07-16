@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 '''
 Program name:
 Structure Prototype Analysis Package (SPAP)
@@ -14,7 +14,6 @@ J. Phys. Condens. Matter 2017, 29, 165901.
 
 Author:
 Dr. Chuanxun Su
-State Key Lab of Superhard Materials, Jilin University, Changchun, China
 
 Email:
 suchuanxun@163.cn / scx@calypso.cn
@@ -49,9 +48,6 @@ ASE. You can also add and store properties you are interested in. This
 functionality is very useful for screening out good functional materials. SPAP can
 also write structures in cif and VASP format in dir_* directory. Technically
 speaking, SPAP can easily write any structure format supported by ASE.
-
-Date:
-August 19, 2019
 '''
 
 import os
@@ -76,8 +72,9 @@ except:
 
 
 def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=None, r_cut_off=None, extend_r=1.0,
-             ilat=2, ccf_step=0.02, l_db=True, l_cif=False, l_poscar=False, l_view=False, work_dir='./',
-             structure_list=[], i_mode=1, lplt=False, ftype='CCF', apw=60.0, readf='XDATCAR', index=':'):
+             ilat=2, ccf_step=0.02, l_db=True, l_cif=False, l_poscar=False, lprm=False, l_view=False, work_dir='./',
+             structure_list=[], i_mode=1, lplt=False, ftype='CCF', apw=60.0, readf='XDATCAR', index=':', nsm=False,
+             nfu=False):
     '''
     This function starts all the calculations.
     :param type:
@@ -126,7 +123,7 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
         4 calculate symmetry and similarity of structures in structure_list.
     :return:
     '''
-    print('Welcome using Structure Prototype Analysis Package (SPAP). Coordination\n'
+    print('Welcome using Structure Prototype Analysis Package (SPAP). The Coordination\n'
           'Characterization Function (CCF) is used to assess structural similarity. If\n'
           'you use this program and method in your research, please read and cite the\n'
           'following publication:\n'
@@ -174,8 +171,6 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
                     calculator = 'Gaussian'
                 else:
                     calculator = 'Unknown'
-                    # print('Not supported yet.')
-                    # exit()
             elif 'NumberOfLocalOptim' in line:
                 nolo = (line[line.find('=') + 1:-1]).replace(' ', '')
             elif 'Cluster' in line:
@@ -186,8 +181,6 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
                         ilat = 0
                         if threshold == None:
                             threshold = 0.035
-                    # print('Not supported yet.')
-                    # exit()
             elif '2D' in line:
                 if (line[line.find('=') + 1:-1].lstrip())[0] == 'T':
                     pbc = [True, True, False]
@@ -260,7 +253,8 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
         print('Reading structure')
         ill = []
         for ii in range(total_struc):
-            element_numbers = (struct_lines[e_list[ii][0] + 3][9:-1]).split(' ')
+            ideqp1 = struct_lines[e_list[ii][0] + 3].index('=') + 1
+            element_numbers = (struct_lines[e_list[ii][0] + 3][ideqp1:-1]).split(' ')
             element_numbers = [n for n in element_numbers if n != '']
             chemical_formula = ''
             for j, symbol in enumerate(chemical_symbols):
@@ -269,12 +263,11 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
             # number_of_atom=sum([int(n) for n in element_numbers])
             # positions=[[float(struct_lines[e_list[ii][0]+13+k][j-12:j]) for j in [13,25,37]] for k in range(sum([int(n) for n in element_numbers]))]
             try:
-                structure_list.append(Atoms(
-                    chemical_formula,
-                    cell=[[float(struct_lines[e_list[ii][0] + 6 + k][j - 16:j]) for j in [17, 33, 49]] for k in
-                          [0, 1, 2]],
-                    scaled_positions=[[float(struct_lines[e_list[ii][0] + 13 + k][j - 12:j]) for j in [13, 25, 37]] for
-                                      k in range(sum([int(n) for n in element_numbers]))], pbc=pbc))
+                tpcl = np.array([[float(struct_lines[e_list[ii][0] + 6 + k][j - 16:j]) for j in [17, 33, 49]] for k in
+                                 [0, 1, 2]])
+                scpos = np.array([[float(struct_lines[e_list[ii][0] + 13 + k][j - 12:j]) for j in [13, 25, 37]] for
+                                  k in range(sum([int(n) for n in element_numbers]))])
+                structure_list.append(Atoms(chemical_formula, cell=tpcl, scaled_positions=scpos, pbc=pbc))
             except:
                 ill.append(ii)
                 print('Warning: structure in line {} in struct.dat was discarded.'.format(e_list[ii][0]))
@@ -292,7 +285,9 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
             for name in files:
                 try:
                     structure_list.append(read(os.path.join(root, name)))
+                    structure_list[-1].fnm = work_dir + os.path.join(root, name)
                     total_struc += 1
+                    # print(name+'\n')
                 except:
                     print('Cann\'t read this file: ' + os.path.join(root, name))
     elif i_mode == 3:
@@ -329,6 +324,7 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
                 if 'OUTCAR' in name:
                     try:
                         structure_list.append(read(os.path.join(root, name), format='vasp-out'))
+                        structure_list[-1].fnm = work_dir + os.path.join(root, name)[1:]
                         i += 1
                         if debug:
                             e_list.append(
@@ -338,6 +334,7 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
                             e_list.append(
                                 [0, structure_list[-1].calc.results['energy'] / len(structure_list[-1].numbers),
                                  i])
+                        # Be careful!!! Energy is changed!!!
                         structure_list[-1].calc.results['energy'] = e_list[-1][1]
                     except:
                         print('Cann\'t read this file: ' + os.path.join(root, name))
@@ -484,7 +481,7 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
         if threshold == None:
             threshold = 0.06
         struc_d = classify_structures([x.conventional_cell for x in structure_list],
-                                      space_g_l, threshold, r_cut_off, ilat, r_vector)
+                                      space_g_l, threshold, r_cut_off, ilat, r_vector, nsm, nfu)
         d_f = open('distance.dat', 'w')
         if i_mode == 1:
             d_f.write('{:>11}{:>14}{:>15} {:>13} {:>12} {:>13}\n'
@@ -499,20 +496,17 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
         struc_d = [[-2, 0.0] for i in range(total_struc)]
 
     print('Writing out put files')
+    if i_mode == 2 or i_mode == 3:
+        fstcn = open('structure_source.dat', 'w')
+        for i, struct in enumerate(structure_list):
+            fstcn.write('{:<6} {}\n'.format(i + 1, struct.fnm))
+        fstcn.close()
     with open('Analysis_Output.dat', 'w') as anal:
-        if i_mode == 1:
-            # format_a1='{:>11}{:>14}{:>15} {:>10} {:>12} {:>10}\n'
-            # content_a1=('No.', 'Enthalpy', symprec, 'Density', 'Formula unit', 'Volume')
+        if i_mode == 1 or i_mode == 3:
             anal.write('{:>11}{:>14}{:>15} {:>10} {:>12} {:>10}\n'.format('No.', 'Enthalpy', symprec, 'Density',
                                                                           'Formula unit', 'Volume'))
         elif i_mode == 2 or i_mode == 4:
-            # format_a1='{:>11}{:>15} {:>10} {:>12} {:>10}\n'
-            # content_a1=('No.', symprec, 'Density', 'Formula unit', 'Volume')
             anal.write('{:>5}{:>15} {:>10} {:>12} {:>10}\n'.format('No.', symprec, 'Density', 'Formula unit', 'Volume'))
-        elif i_mode == 3:
-            anal.write('{:>11}{:>14}{:>15} {:>10} {:>12} {:>10}\n'.format('No.', 'Energy', symprec, 'Density',
-                                                                          'Formula unit', 'Volume'))
-        # anal.write(format_a1.format((content_a1)))
         if i_mode == 1 or i_mode == 3:
             format_a = '{:>4} ({:>4}){:>14.5f}{:>15} {:>10.5f} {:>12} {:>10.3f}\n'
         elif i_mode == 2 or i_mode == 4:
@@ -602,59 +596,30 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
                         db.write(structure_list[i].conventional_cell, relaxed=True, e_per_a=e_list[i][1],
                                  space_group=structure_list[i].space_group, pressure=pressure,
                                  experimental=False, opt_code=calculator)
+    if l_poscar:
+        ctat = count_atoms(structure_list[left_id[0]].numbers, 2)
     for i in left_id:
+        if lprm:
+            prmc = standardize_cell(
+                (structure_list[i].cell, structure_list[i].get_scaled_positions(wrap=True), structure_list[i].numbers),
+                symprec=symprec, to_primitive=True)
+            if prmc == None:
+                prmc = structure_list[i]
+            else:
+                prmc = Atoms(cell=prmc[0], scaled_positions=prmc[1], numbers=prmc[2], pbc=pbc)
         if l_cif:
             write(dir_name + '/' + str(i + 1) + '_' + get_spg_n(structure_list[i].space_group) + '.cif',
                   structure_list[i].conventional_cell)
+            if lprm:
+                write(dir_name + '/' + str(i + 1) + '_' + get_spg_n(structure_list[i].space_group) + '_p.cif',
+                      prmc)
         if l_poscar:
-            # write(dir_name + '/UCell_' + str(i + 1) + '_' + get_spg_n(structure_list[i].space_group) + '.vasp',
-            #       structure_list[i].conventional_cell)
-            poscar = open(dir_name + '/UCell_' + str(i + 1) + '_' + get_spg_n(structure_list[i].space_group) + '.vasp',
-                          'w')
-            poscar.write(structure_list[i].space_group + '\n' + '1.0\n')
-            for v in structure_list[i].conventional_cell.cell:
-                poscar.write('{:>13.7f}{:>13.7f}{:>13.7f}\n'.format(v[0], v[1], v[2]))
-            # atomic_n = []
-            ele_n = ''
-            count_e = {}
-            for j in structure_list[i].conventional_cell.numbers:
-                if j in count_e:
-                    count_e[j] += 1
-                else:
-                    count_e[j] = 1
-            for n in count_e.keys():
-                for key in atomic_numbers.keys():
-                    if atomic_numbers[key] == n:
-                        symbol = key
-                        break
-                poscar.write('{:4}'.format(symbol))
-                ele_n += ' {:>3}'.format(count_e[n])
-            # for symbol in structure_list[i].conventional_cell.symbols.formula._count.keys():
-            #     poscar.write('{:4}'.format(symbol))
-            #     ele_n += ' {:>3}'.format(structure_list[i].conventional_cell.symbols.formula._count[symbol])
-            poscar.write('\n' + ele_n)
-
-            # for symbol in chemical_symbols:
-            #     poscar.write('{:4}'.format(symbol))
-            #     atomic_n.append(atomic_numbers[symbol])
-            #     frequency = 0
-            #     for n in structure_list[i].conventional_cell.numbers:
-            #         if n == atomic_n[-1]:
-            #             frequency += 1
-            #     atomic_n[-1] = [atomic_n[-1], frequency]
-            # poscar.write('\n{:>3}'.format(atomic_n[0][1]))
-            # if len(atomic_n) > 1:
-            #     for n in atomic_n[1:]:
-            #         poscar.write(' {:>3}'.format(n[1]))
-
-            poscar.write('\nDirect\n')
-            scaled_pos = structure_list[i].conventional_cell.get_scaled_positions(wrap=True)
-            for n in count_e.keys():
-                # for n in [atomic_numbers[symbol] for symbol in structure_list[i].symbols.formula._count.keys()]:
-                for j, pos in enumerate(scaled_pos):
-                    if structure_list[i].conventional_cell.numbers[j] == n:
-                        poscar.write('{:>8.5f} {:>8.5f} {:>8.5f}\n'.format(pos[0], pos[1], pos[2]))
-            poscar.close()
+            write_struc(structure_list[i].conventional_cell, ctat,
+                        dir_name + '/UCell_' + str(i + 1) + '_' + get_spg_n(structure_list[i].space_group) + '.vasp',
+                        structure_list[i].space_group)
+            if lprm:
+                write_struc(prmc, ctat, dir_name + '/PCell_' + str(i + 1) + '_' + get_spg_n(
+                    structure_list[i].space_group) + '.vasp', structure_list[i].space_group)
     if l_view:
         view([structure_list[i].conventional_cell for i in left_id])
     n_left = len(left_id)
@@ -665,11 +630,48 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
     # return structure_list,[e[1] for e in e_list]
 
 
+def write_struc(struc, ctat, strucn, tag='generated by BDM'):
+    poscar = open(strucn, 'w')
+    poscar.write(tag + '\n1.0\n')
+    for v in struc.cell:
+        poscar.write('{:>13.7f}{:>13.7f}{:>13.7f}\n'.format(v[0], v[1], v[2]))
+    smbd = getcf(struc.numbers, ctat, 2)
+    ele_n = ''
+    for smb in smbd.keys():
+        poscar.write('{:4}'.format(smb))
+        ele_n += ' {:>3}'.format(smbd[smb])
+    poscar.write('\n' + ele_n + '\nDirect\n')
+    scaled_pos = struc.get_scaled_positions(wrap=True)
+    for n in ctat.keys():
+        for j, pos in enumerate(scaled_pos):
+            if struc.numbers[j] == n:
+                poscar.write('{:>10.7f} {:>10.7f} {:>10.7f}\n'.format(pos[0], pos[1], pos[2]))
+    poscar.close()
+
+
+def getcf(numbers, ctat, irt=1):
+    cf = ''
+    smbd = {}
+    for key in ctat.keys():
+        for eles in atomic_numbers.keys():
+            if atomic_numbers[eles] == key:
+                cf += eles
+                break
+        ict = np.sum(numbers == key)
+        smbd[eles] = ict
+        if ict != 1:
+            cf += str(ict)
+    if irt == 1:
+        return cf
+    elif irt == 2:
+        return smbd
+
+
 def get_spg_n(spg):
     return spg[spg.index('(') + 1:-1]
 
 
-def classify_structures(structures, space_groups, threshold, r_cut_off, ilat, r_vector):
+def classify_structures(structures, space_groups, threshold, r_cut_off, ilat, r_vector, nsm=False, nfu=False):
     n = len(structures)
     struc_d = [[-1, 0.0] for i in range(n)]
     volume_dict = {}
@@ -681,11 +683,11 @@ def classify_structures(structures, space_groups, threshold, r_cut_off, ilat, r_
             if ilat != 0 and (not structures[i].n_atom in volume_dict):
                 volume_dict[structures[i].n_atom] = structures[i].get_volume()
             id_list = [i] + [x for x in range(i + 1, n) if
-                             (struc_d[x][0] == -1) and (space_groups[i] == space_groups[x]) and
-                             (structures[i].n_atom == structures[x].n_atom)]
+                             (struc_d[x][0] == -1) and ((space_groups[i] == space_groups[x]) or nsm) and
+                             ((structures[i].n_atom == structures[x].n_atom) or nfu)]
             if ilat != 0:
                 cal_struc_d(structures, id_list, struc_d, space_groups[i], threshold, r_cut_off,
-                            volume_dict[structures[i].n_atom], ilat, r_vector)
+                            volume_dict[structures[i].n_atom] / structures[i].n_atom, ilat, r_vector)
             else:
                 cal_struc_d(structures, id_list, struc_d, space_groups[i], threshold, r_cut_off,
                             100.0, ilat, r_vector)
@@ -701,7 +703,7 @@ def cal_struc_d(structures, id_list, struc_d, spg_n, threshold, r_cut_off, volum
     else:
         l_same_cell = False
     if len(id_list) != 1:
-        if ilat == 0 or volume == structures[id_list[0]].get_volume():
+        if ilat == 0 or volume == structures[id_list[0]].get_volume() / structures[id_list[0]].n_atom:
             structures[id_list[0]].ccf = struc2ccf(structures[id_list[0]], r_cut_off, r_vector)
             # if l_same_cell:
             #     temp_c=structures[id_list[0]].cell
@@ -709,7 +711,9 @@ def cal_struc_d(structures, id_list, struc_d, spg_n, threshold, r_cut_off, volum
             # temp_c=structures[id_list[0]].cell * (volume / structures[id_list[0]].get_volume()) ** (1.0 / 3.0)
             structures[id_list[0]].ccf = \
                 struc2ccf(Atoms(
-                    cell=structures[id_list[0]].cell * (volume / structures[id_list[0]].get_volume()) ** (1.0 / 3.0),
+                    cell=structures[id_list[0]].cell * (
+                            volume / structures[id_list[0]].get_volume() * structures[id_list[0]].n_atom) ** (
+                                 1.0 / 3.0),
                     scaled_positions=structures[id_list[0]].get_scaled_positions(wrap=True),
                     numbers=structures[id_list[0]].numbers, pbc=structures[0].pbc), r_cut_off, r_vector)
         # volume = structures[id_list[0]].get_volume()
@@ -719,7 +723,8 @@ def cal_struc_d(structures, id_list, struc_d, spg_n, threshold, r_cut_off, volum
             else:
                 scaled_positions = structures[i].get_scaled_positions(wrap=True)
                 structures[i].ccf = struc2ccf(
-                    Atoms(cell=structures[i].cell * (volume / structures[i].get_volume()) ** (1.0 / 3.0),
+                    Atoms(cell=structures[i].cell * (volume / structures[i].get_volume() * structures[i].n_atom) ** (
+                            1.0 / 3.0),
                           scaled_positions=scaled_positions, numbers=structures[i].numbers, pbc=structures[0].pbc),
                     r_cut_off, r_vector)
             # if i == 57:
@@ -741,7 +746,8 @@ def cal_struc_d(structures, id_list, struc_d, spg_n, threshold, r_cut_off, volum
                 elif l_same_cell:
                     struc_d[i][1] = cal_ccf_d(
                         structures[j].ccf, struc2ccf(Atoms(
-                            cell=structures[j].cell * (volume / structures[j].get_volume()) ** (1.0 / 3.0),
+                            cell=structures[j].cell * (volume / structures[j].get_volume() * structures[j].n_atom) ** (
+                                    1.0 / 3.0),
                             scaled_positions=scaled_positions, numbers=structures[i].numbers,
                             pbc=structures[0].pbc), r_cut_off, r_vector))
                     if struc_d[i][1] < threshold:
@@ -885,7 +891,7 @@ this parameter controls which method will be used to deal with lattice for compa
                         help='different functionality of SPAP: \n1 analyze CALYPSO prediction results; \n2 calculate '
                              'symmetry and similarity of structures in struc directory; \n3 read and analyze '
                              'structures optimized by VASP (default: %(default)s)')
-    parser.add_argument('-v', '--version', action='version', version='SPAP: 1.0.1')
+    parser.add_argument('-v', '--version', action='version', version='SPAP: 1.0.2')
     args = parser.parse_args()
     if args.a:
         args.total_struc = 99999999
