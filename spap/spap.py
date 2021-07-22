@@ -74,7 +74,7 @@ except:
 def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=None, r_cut_off=None, extend_r=1.0,
              ilat=2, ccf_step=0.02, l_db=True, l_cif=False, l_poscar=False, lprm=False, l_view=False, work_dir='./',
              structure_list=[], i_mode=1, lplt=False, ftype='CCF', apw=60.0, readf='XDATCAR', index=':', nsm=False,
-             nfu=False):
+             nfu=False, l_xyz=False):
     '''
     This function starts all the calculations.
     :param type:
@@ -267,7 +267,7 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
                                  [0, 1, 2]])
                 scpos = np.array([[float(struct_lines[e_list[ii][0] + 13 + k][j - 12:j]) for j in [13, 25, 37]] for
                                   k in range(sum([int(n) for n in element_numbers]))])
-                structure_list.append(Atoms(chemical_formula, cell=tpcl, scaled_positions=scpos, pbc=pbc))
+                structure_list.append(Atoms(chemical_formula, cell=tpcl, scaled_positions=scpos, pbc=pbc, info={'enthalpy': e_list[ii][1]}))
             except:
                 ill.append(ii)
                 print('Warning: structure in line {} in struct.dat was discarded.'.format(e_list[ii][0]))
@@ -450,7 +450,7 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
             structure.space_group = 'P1(1)'
             space_g_l.append(1)
         structure.conventional_cell.n_atom = len(structure.conventional_cell.numbers)
-    if l_cif or l_poscar:
+    if l_cif or l_poscar or l_xyz:
         if os.path.exists(dir_name):
             for root, dirs, files in os.walk(dir_name, topdown=False):
                 for name in files:
@@ -613,6 +613,9 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
             if lprm:
                 write(dir_name + '/' + str(i + 1) + '_' + get_spg_n(structure_list[i].space_group) + '_p.cif',
                       prmc)
+        if l_xyz:
+            write(dir_name + '/' + str(i + 1) + '_' + get_spg_n(structure_list[i].space_group) + '.xyz',
+                    structure_list[i])
         if l_poscar:
             write_struc(structure_list[i].conventional_cell, ctat,
                         dir_name + '/UCell_' + str(i + 1) + '_' + get_spg_n(structure_list[i].space_group) + '.vasp',
@@ -885,6 +888,8 @@ this parameter controls which method will be used to deal with lattice for compa
                         help='write structures into cif files (default: %(default)s)')
     parser.add_argument('--pos', '--vasp', '--l_poscar', action='store_true', dest='l_poscar',
                         help='write structures into files in VASP format (default: %(default)s)')
+    parser.add_argument('--xyz', '--l_xyz', action='store_true', dest='l_xyz',
+                        help='write structures into files in extxyzextxyz format (default: %(default)s)')
     parser.add_argument('-d', '--l_view', action='store_true', help='display the structures (default: %(default)s)')
     parser.add_argument('-w', '--work_dir', type=str, default='./', help='set working directory (default: %(default)s)')
     parser.add_argument('-i', '--i_mode', type=int, choices=[1, 2, 3], default=1,
@@ -924,6 +929,7 @@ this parameter controls which method will be used to deal with lattice for compa
         i_mode=args.i_mode,
         # l_view=True,
         l_view=args.l_view,
+        l_xyz=args.l_xyz,
     )
 
 
