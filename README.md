@@ -1,13 +1,13 @@
 # StructurePrototypeAnalysisPackage
-Structure Prototype Analysis Package can analyze symmetry and compare similarity of a large number of atomic structures.
+Structure Prototype Analysis Package can analyze symmetry and compare similarity of large amount of atomic structures.
 
 ## Description:
 The structure prototype analysis package (SPAP) can analyze symmetry and compare 
 similarity of a large number of atomic structures. Typically, SPAP can 
 analyze structures predicted by CALYPSO (www.calypso.cn). We use spglib to 
 analyze symmetry. The coordination characterization function (CCF) is used to 
-measure structural similarity. We developed a unique and advanced unsupervised learning 
-model (not the one as depicted in the paper) to automatically classify structures into groups. If you use this program and method in your 
+measure structural similarity. We developed a unique and advanced clustering method 
+to automatically classify structures into groups. If you use this program and method in your 
 research, please read and cite the publication: J. Phys. Condens. Matter 
 2017, 29, 165901.
 
