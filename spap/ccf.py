@@ -215,7 +215,7 @@ def get_nspec(struc):
 
 
 def cell_range(cell, pbc, rcut):
-    recipc_no2pi = Atoms(cell=cell).get_reciprocal_cell()
+    recipc_no2pi = cell.reciprocal()
     i_range = []
     for i in range(3):
         if pbc[i] == True:
