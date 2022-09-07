@@ -9,19 +9,22 @@ import numpy as np
 from ase import Atoms
 from math import sqrt, pi, exp
 from ase.data import atomic_numbers
+from itertools import permutations
 # from numba import jit
 
 
 def struc2ccf(struc, r_cut_off, r_vector, apw=60.0, ftype='CCF'):
-    rho = len(struc.numbers) / struc.get_volume()
-    ccf = d2ccf(cal_inter_atomic_d(struc, r_cut_off), r_cut_off, r_vector, apw, ftype, rho)
+    if not hasattr(struc, 'idm'):
+        set_pbc(struc)
+    rho = len(struc.numbers) / get_psv(struc)
+    ccf = d2ccf(cal_inter_atomic_d(struc, r_cut_off), r_cut_off, r_vector, apw, ftype, rho, struc.idm)
     nspec = get_nspec(struc)
-    lccf=len(r_vector)
+    lccf = len(r_vector)
     for i in range(1, nspec + 1):
         for j in range(i, nspec + 1):
             pairt = str(i) + '_' + str(j)
             if not pairt in ccf:
-                ccf[pairt] = np.zeros(lccf,float)
+                ccf[pairt] = np.zeros(lccf, float)
     return ccf
 
 
@@ -131,23 +134,48 @@ def cal_inter_atomic_d(struc, r_cut_off):
 
 
 # @jit()
-def d2ccf(distances, r_cut_off, r_vector, a=60.0, ftype='CCF', rho=1.0):
+def d2ccf(distances, r_cut_off, r_vector, a=60.0, ftype='CCF', rho=1.0, idm=3):
     ccf = {}
-    if ftype == 'RDF':
-        norm = 2.0 * pi * rho
-    for key1 in distances.keys():
-        for key2 in distances[key1].keys():
-            if key1 in ccf:
-                if ftype == 'CCF':
-                    ccf[key1] = ccf[key1] + gaussian_f(distances[key1][key2] * weight_f(key2, r_cut_off), key2,
-                                                       r_vector, a)
-                elif ftype == 'RDF':
-                    ccf[key1] = ccf[key1] + gaussian_f(distances[key1][key2] / norm / key2 ** 2, key2, r_vector, a)
-            else:
-                if ftype == 'CCF':
+    if ftype == 'CCF' or ftype == 'CCF_2':
+        for key1 in distances.keys():
+            for key2 in distances[key1].keys():
+                # 这里可以加速，仅计算出一定范围内的ccf累加上去，以半峰宽作为一个指标
+                if key1 in ccf:
+                    ccf[key1] += gaussian_f(distances[key1][key2] * weight_f(key2, r_cut_off), key2, r_vector, a)
+                else:
                     ccf[key1] = gaussian_f(distances[key1][key2] * weight_f(key2, r_cut_off), key2, r_vector, a)
-                elif ftype == 'RDF':
-                    ccf[key1] = gaussian_f(distances[key1][key2] / norm / key2 ** 2, key2, r_vector, a)
+    elif ftype == 'CCF_1': # 所有长度的原子对权重为1，没有使用CSPD文章描述的权重函数
+        for key1 in distances.keys():
+            for key2 in distances[key1].keys():
+                if key1 in ccf:
+                    ccf[key1] = ccf[key1] + gaussian_f(distances[key1][key2], key2, r_vector, a)
+                else:
+                    ccf[key1] = gaussian_f(distances[key1][key2], key2, r_vector, a)
+    elif ftype == 'RDF':
+        if idm == 3:
+            norm = 2.0 * pi * rho
+            for key1 in distances.keys():
+                # 这里可以加速，key2累加完了再除以norm，同样下面的2维和1维也能加速
+                for key2 in distances[key1].keys():
+                    if key1 in ccf:
+                        ccf[key1] = ccf[key1] + gaussian_f(distances[key1][key2] / norm / key2 ** 2, key2, r_vector, a)
+                    else:
+                        ccf[key1] = gaussian_f(distances[key1][key2] / norm / key2 ** 2, key2, r_vector, a)
+        elif idm == 2:
+            norm = pi * rho
+            for key1 in distances.keys():
+                for key2 in distances[key1].keys():
+                    if key1 in ccf:
+                        ccf[key1] = ccf[key1] + gaussian_f(distances[key1][key2] / norm / key2, key2, r_vector, a)
+                    else:
+                        ccf[key1] = gaussian_f(distances[key1][key2] / norm / key2, key2, r_vector, a)
+        elif idm == 1:
+            for key1 in distances.keys():
+                for key2 in distances[key1].keys():
+                    if key1 in ccf:
+                        ccf[key1] = ccf[key1] + gaussian_f(distances[key1][key2] / rho, key2, r_vector, a)
+                    else:
+                        ccf[key1] = gaussian_f(distances[key1][key2] / rho, key2, r_vector, a)
     return ccf
 
 
@@ -235,3 +263,72 @@ def count_atoms_dict(numbers):
         else:
             ctype[i] = 1
     return ctype
+
+
+def get_psv(struc):
+    '''
+    To calculate the pseudo volume. However, the pseudo volume will be volume, area, and length for 3D, 2D, and 1D condition, respectively!
+    :param struc:
+    :return:
+    '''
+    if struc.idm == 3 or struc.idm==0:
+        return struc.get_volume()
+    elif struc.idm == 2:
+        tpar = [struc.cell[k, :] for k in range(3) if struc.pbc[k] == True]
+        return np.sqrt(((np.array(
+            [tpar[0][1] * tpar[1][2] - tpar[0][2] * tpar[1][1], tpar[0][2] * tpar[1][0] - tpar[0][0] * tpar[1][2],
+             tpar[0][0] * tpar[1][1] - tpar[0][1] * tpar[1][0]])) ** 2).sum())
+    elif struc.idm == 1:
+        for k in range(3):
+            if struc.pbc[k] == True:
+                return np.sqrt(((struc.cell[k, :]) ** 2).sum())
+
+
+def set_pbc(struc):
+    gap = 6.0
+    # gap = 7.0
+    struc.idm = 3
+    newpos = struc.get_scaled_positions(wrap=True)
+    scpos = newpos
+    leag = struc.get_cell_lengths_and_angles()
+    tppos = np.empty(len(scpos))
+    reset = False
+    for i in range(3):
+        scpos = np.array(sorted(scpos, key=lambda x: x[i]))
+        tppos[0] = scpos[-1, i] - 1.0
+        if len(scpos) > 1:
+            tppos[1:] = scpos[:-1, i]
+        tppos = scpos[:, i] - tppos
+        if tppos.max() * leag[i] < gap:
+            # It's better to calculate the distance perpendicular to the plane of the other two vectors.
+            struc.pbc[i] = True
+        else:
+            struc.pbc[i] = False
+            struc.idm -= 1
+            maxid = tppos.argmax()
+            # The middle point of the vacuum space should be shifted to the boundary!!!
+            shift = scpos[maxid, i] - tppos[maxid] / 2.0
+            if abs(shift) > 1.0e-10:
+                newpos[:, i] = newpos[:, i] - shift
+                newpos[:, i] = newpos[:, i] - np.floor(newpos[:, i])
+                if not reset:
+                    reset = True
+    if reset:
+        struc.set_scaled_positions(newpos)
+
+
+def get_pm(numbers):
+    # ele_tag = element_tag(numbers)
+    catm = count_atoms_dict(numbers)
+    catm = sorted(catm.values())
+    pms = list(permutations(range(1, len(catm) + 1)))
+    pms2 = [pms[0]]
+    for i in range(1, len(pms)):
+        tplg = True
+        for j, n in enumerate(pms[i]):
+            if catm[n - 1] != catm[j]:
+                tplg = False
+                break
+        if tplg:
+            pms2.append(pms[i])
+    return pms2
