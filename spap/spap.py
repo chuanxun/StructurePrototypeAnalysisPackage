@@ -59,9 +59,9 @@ from ase.visualize import view
 from ase.io import write, read
 from ase.data import atomic_numbers
 from spglib import standardize_cell, get_spacegroup
-from ccf import d2ccf, struc2ccf, cal_ccf_d, element_tag, get_psv, set_pbc
+# from ccf import d2ccf, struc2ccf, cal_ccf_d, element_tag, get_psv, set_pbc
 
-# from spap.ccf import cal_inter_atomic_d, d2ccf, struc2ccf, cal_ccf_d, element_tag
+from spap.ccf import struc2ccf, cal_ccf_d, element_tag, get_psv, set_pbc
 
 try:
     import pickle
@@ -149,9 +149,6 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
             r_cut_off = 9.0
         ccf_range = r_cut_off + extend_r
         r_vector = np.linspace(0.0, ccf_range, int(ccf_range / ccf_step) + 2)
-    # os.chdir('D:\\share\\wks\\1_example\\results2')
-    # os.chdir('D:\\share\\wks\\Examples\\1_example\\results')
-    # os.chdir('D:\\share\\wks\\2mg\\results')
     os.chdir(work_dir)
     chemical_symbols = ''
     prediction_method = 'Unknown'
@@ -433,11 +430,7 @@ def run_spap(symprec=0.1, e_range=0.4, total_struc=None, l_comp=True, threshold=
     if pbc == [True, True, True] or pbc == [True, True, False]:
         print('Analyzing symmetry')
         if r_cut_off == None:
-            if pbc == [True, True, True]:
-                r_cut_off = 9.0
-            else:
-                # r_cut_off = 6.0
-                pass
+            r_cut_off = 9.0
             # ccf_range = r_cut_off + extend_r
             # r_vector = np.linspace(0.0, ccf_range, int(ccf_range / ccf_step) + 2)
     elif r_cut_off == None:
@@ -1106,7 +1099,7 @@ this parameter controls which method will be used to deal with lattice for compa
                         help='different functionality of SPAP: \n1 analyze CALYPSO prediction results; \n2 calculate '
                              'symmetry and similarity of structures in struc directory; \n3 read and analyze '
                              'structures optimized by VASP (default: %(default)s)')
-    parser.add_argument('-v', '--version', action='version', version='SPAP: 1.0.2')
+    parser.add_argument('-v', '--version', action='version', version='SPAP: 1.0.4')
     args = parser.parse_args()
     if args.a:
         args.total_struc = 99999999
