@@ -17,7 +17,7 @@ print('Start time: ' + datetime.datetime.strftime(start_time, '%Y-%m-%d %H:%M:%S
 run_spap(
     l_cif=True,
     # l_db=True,
-    r_cut_off=9.0,
+    # r_cut_off=9.0,
     symprec=0.01,
     e_range=666,
     # l_poscar=True,
